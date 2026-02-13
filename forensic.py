@@ -1,0 +1,206 @@
+from datetime import datetime
+
+
+def generate_forensic_report(analysis_result: dict) -> dict:
+    """
+    Takes the raw analysis result from the detection pipeline and generates
+    a structured forensic report.
+    
+    Args:
+        analysis_result: Dictionary containing:
+            - filename: Name of the analyzed file
+            - layers: Dict with c2pa, synthid, ai_model results
+            - final_verdict: "AI Image" or "Real Image"
+            - confidence: Confidence percentage
+            - is_ai_generated: Boolean flag
+    
+    Returns:
+        Dictionary containing the forensic report
+    """
+    
+    report = _generate_forensic_report(analysis_result)
+    
+    return {
+        "success": True,
+        "enhanced_report": report,
+        "raw_analysis": analysis_result,
+        "summary": _extract_summary(analysis_result)
+    }
+
+
+def _generate_forensic_report(analysis_result: dict) -> str:
+    """Generate a structured forensic report."""
+    
+    filename = analysis_result.get('filename', 'Unknown')
+    verdict = analysis_result.get('final_verdict', 'Unknown')
+    confidence = analysis_result.get('confidence', 0)
+    is_ai = analysis_result.get('is_ai_generated', False)
+    layers = analysis_result.get('layers', {})
+    timestamp = datetime.now().strftime("%Y-%m-%d %H:%M:%S")
+    
+    report = f"""# FORENSIC ANALYSIS REPORT
+
+## Executive Summary
+The image "{filename}" has been analyzed using DeepFake Defender's multi-layer detection system.
+
+**Verdict: {verdict}**
+**Confidence: {confidence:.1f}%**
+**Analysis Time: {timestamp}**
+
+---
+
+## Technical Analysis
+
+### Layer 1: C2PA Provenance Check
+"""
+    
+    c2pa = layers.get('c2pa', {})
+    if c2pa.get('c2pa_present'):
+        report += f"**Status:** C2PA metadata DETECTED\n\n"
+        report += f"- Issuer: {c2pa.get('issuer', 'Unknown')}\n"
+        report += f"- Signature Valid: {c2pa.get('valid', 'Unknown')}\n"
+        report += f"\n*C2PA (Coalition for Content Provenance and Authenticity) metadata indicates this image was created or modified by AI tools that embed provenance information.*\n"
+    else:
+        report += "**Status:** No C2PA metadata found\n\n"
+        report += "*The image does not contain cryptographic provenance data. This is common for images not created with C2PA-compliant tools.*\n"
+    
+    report += "\n### Layer 2: SynthID Watermark Detection\n"
+    synthid = layers.get('synthid', {})
+    status = synthid.get('status', 'Unknown')
+    report += f"**Status:** {status.title()}\n\n"
+    if synthid.get('reason'):
+        report += f"*{synthid.get('reason')}*\n"
+    
+    report += "\n### Layer 3: AI Detection Model (ResNet + ViT Ensemble)\n"
+    ai_model = layers.get('ai_model', {})
+    if ai_model.get('status') == 'complete':
+        report += f"**Prediction:** {ai_model.get('label', 'Unknown')}\n"
+        report += f"**Model Confidence:** {ai_model.get('confidence', 0):.1f}%\n\n"
+        report += "*This layer uses a dual-model ensemble combining ResNet-50 CNN and Vision Transformer (ViT) architectures, fused via polynomial meta-learning for enhanced accuracy.*\n"
+    elif ai_model.get('status') == 'skipped':
+        report += f"**Status:** Skipped\n"
+        report += f"*Reason: {ai_model.get('reason', 'N/A')}*\n"
+    else:
+        report += f"**Status:** {ai_model.get('status', 'Unknown')}\n"
+
+    report += f"""
+
+---
+
+## Evidence Assessment
+
+"""
+    
+    if c2pa.get('c2pa_present'):
+        report += "- **C2PA Metadata Found:** Strong indicator of AI tool usage (100% confidence when present)\n"
+    
+    if ai_model.get('status') == 'complete':
+        label = ai_model.get('label', 'Unknown')
+        conf = ai_model.get('confidence', 0)
+        if conf > 80:
+            strength = "High"
+        elif conf > 60:
+            strength = "Moderate"
+        else:
+            strength = "Low"
+        report += f"- **AI Model Analysis:** {strength} confidence ({conf:.1f}%) indicating {label}\n"
+
+    report += f"""
+
+---
+
+## Conclusion
+
+Based on the multi-layer analysis, this image is classified as **{verdict}** with **{confidence:.1f}%** confidence.
+
+"""
+    
+    if is_ai:
+        report += """### Recommendations
+- Exercise caution when using this image for factual purposes
+- Consider reverse image search for original source
+- Note that AI-generated images may contain synthetic artifacts not visible to human observers
+"""
+    else:
+        report += """### Recommendations
+- Image appears to be authentic based on available analysis
+- For critical use cases, consider additional verification methods
+- Detection accuracy depends on image quality and manipulation techniques
+"""
+
+    report += f"""
+---
+
+## Forensic Metadata
+
+| Field | Value |
+|-------|-------|
+| Analysis Timestamp | {timestamp} |
+| Detection System | DeepFake Defender v1.0 |
+| Models Used | ResNet-50, ViT (dima806), Meta-Learner |
+| C2PA Library | c2pa-python |
+
+---
+*Report generated by DeepFake Defender Forensic System*
+"""
+    
+    return report
+
+
+def _extract_summary(analysis_result: dict) -> dict:
+    """Extract a concise summary from the analysis."""
+    
+    return {
+        "verdict": analysis_result.get('final_verdict', 'Unknown'),
+        "confidence": analysis_result.get('confidence', 0),
+        "is_ai_generated": analysis_result.get('is_ai_generated', False),
+        "detection_method": _get_detection_method(analysis_result.get('layers', {}))
+    }
+
+
+def _get_detection_method(layers: dict) -> str:
+    """Determine which detection method provided the result."""
+    
+    c2pa = layers.get('c2pa', {})
+    if c2pa.get('c2pa_present'):
+        return "C2PA Cryptographic Verification"
+    
+    ai_model = layers.get('ai_model', {})
+    if ai_model.get('status') == 'complete':
+        return "AI Detection Model (ResNet + ViT Ensemble)"
+    
+    return "Unknown"
+
+
+# -------- CLI TESTING --------
+if __name__ == "__main__":
+    # Test with sample data
+    sample_result = {
+        "success": True,
+        "filename": "test_image.jpg",
+        "layers": {
+            "c2pa": {"c2pa_present": False, "message": "No C2PA manifest found"},
+            "synthid": {"status": "skipped", "reason": "Not implemented"},
+            "ai_model": {
+                "status": "complete",
+                "label": "AI Generated",
+                "ai_probability": 0.95,
+                "confidence": 95.0
+            }
+        },
+        "final_verdict": "AI Generated",
+        "confidence": 95.0,
+        "is_ai_generated": True
+    }
+    
+    print("Testing Forensic Report Generation...")
+    print("=" * 50)
+    
+    report = generate_forensic_report(sample_result)
+    
+    if report.get("success"):
+        print(report.get("enhanced_report"))
+    else:
+        print(f"Error: {report.get('error')}")
+        print("\nBasic Report:")
+        print(report.get("basic_report"))

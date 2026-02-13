@@ -1,0 +1,16 @@
+{
+  "claim_generator": "C2PA Test",
+  "assertions": [
+    {
+      "label": "c2pa.actions",
+      "data": {
+        "actions": [
+          {
+            "action": "c2pa.created",
+            "softwareAgent": "Test Generator"
+          }
+        ]
+      }
+    }
+  ]
+}

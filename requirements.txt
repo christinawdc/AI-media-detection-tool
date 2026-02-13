@@ -1,0 +1,16 @@
+# DeepFake Defender Dependencies
+
+# Web Framework
+flask
+werkzeug
+
+# AI/ML
+torch
+torchvision
+transformers
+pillow
+numpy
+joblib
+
+# C2PA (optional - requires system libraries)
+# c2pa  # Uncomment if deploying with system support for libexiv2
