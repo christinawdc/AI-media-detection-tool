@@ -1,0 +1,17 @@
+# DeepFake Defender Dependencies
+
+# Web Framework
+flask
+werkzeug
+
+# AI/ML
+torch
+torchvision
+transformers
+pillow
+numpy
+joblib
+scikit-learn
+
+# C2PA
+c2pa-python
