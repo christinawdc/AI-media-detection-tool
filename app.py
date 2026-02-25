@@ -172,8 +172,10 @@ def get_forensic_report():
 
 # -------- RUN --------
 if __name__ == '__main__':
+    import os
+    port = int(os.environ.get("PORT", 7860))
     print("\n" + "="*50)
     print("🛡️  DeepFake Defender Backend Running")
     print("="*50)
-    print("Open http://127.0.0.1:5000 in your browser\n")
-    app.run(debug=True, port=5000)
+    print(f"Open http://0.0.0.0:{port} in your browser\n")
+    app.run(host="0.0.0.0", debug=False, port=port)
